@@ -5,10 +5,36 @@ from osdagbridge.core.utils.common import (
     KEY_SD_DEFL_LIVE,
     KEY_SD_DEFL_TOTAL,
 )
-from osdagbridge.core.reports.report_utils import _tex, _fig_embed
+from osdagbridge.core.reports.report_utils import _tex, _fig_embed, make_longtable
 
 if TYPE_CHECKING:
     from .report_generator import ReportDataBridge
+
+# "Summary of Maximum Demands": 9 centred columns with a two-level header.
+_DEMANDS_SPEC = (r"|>{\centering\arraybackslash}p{3.1cm}"
+                 r"|>{\centering\arraybackslash}p{1.7cm}"
+                 r"|>{\centering\arraybackslash}p{1.2cm}"
+                 r"|>{\centering\arraybackslash}p{1.3cm}"
+                 r"|>{\centering\arraybackslash}p{1.7cm}"
+                 r"|>{\centering\arraybackslash}p{1.2cm}"
+                 r"|>{\centering\arraybackslash}p{1.3cm}"
+                 r"|>{\centering\arraybackslash}p{1.6cm}"
+                 r"|>{\centering\arraybackslash}p{1.6cm}|")
+_DEMANDS_HEADER = r"""
+\multirow{2}{*}{\makecell{\textbf{Load}\\\textbf{Case/}\\\textbf{Comb.}}}
+& \multicolumn{3}{c|}{\textbf{Bending Moment}}
+& \multicolumn{3}{c|}{\textbf{Shear Force}}
+& \multicolumn{2}{c|}{\textbf{Reaction at Supports}}\\
+\cline{2-9}
+& \makecell{\textbf{Max}\\\textbf{(kNm)}}
+& \textbf{Girder}
+& \makecell{\textbf{Loc.}\\\textbf{(m)}}
+& \makecell{\textbf{Max}\\\textbf{(kN)}}
+& \textbf{Girder}
+& \makecell{\textbf{Loc.}\\\textbf{(m)}}
+& \makecell{\textbf{Left}}
+& \makecell{\textbf{Right}}\\
+"""
 
 def ch4_analysis(asum, fig_paths, bridge: "ReportDataBridge", span_m: float):
     lc_summary  = (asum or {}).get('load_cases', {})
@@ -86,80 +112,22 @@ A grillage model was used for structural analysis. The deck is idealized as a gr
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.25}
 
-\begin{longtable}{|
->{\centering\arraybackslash}p{3.1cm}|
->{\centering\arraybackslash}p{1.7cm}|
->{\centering\arraybackslash}p{1.2cm}|
->{\centering\arraybackslash}p{1.3cm}|
->{\centering\arraybackslash}p{1.7cm}|
->{\centering\arraybackslash}p{1.2cm}|
->{\centering\arraybackslash}p{1.3cm}|
->{\centering\arraybackslash}p{1.6cm}|
->{\centering\arraybackslash}p{1.6cm}|}
-
-\caption{\textbf{Summary of Maximum Demands}}\\
-\hline
-\multirow{2}{*}{\makecell{\textbf{Load}\\\textbf{Case/}\\\textbf{Comb.}}}
-& \multicolumn{3}{c|}{\textbf{Bending Moment}}
-& \multicolumn{3}{c|}{\textbf{Shear Force}}
-& \multicolumn{2}{c|}{\textbf{Reaction at Supports}}\\
-\cline{2-9}
-
-& \makecell{\textbf{Max}\\\textbf{(kNm)}}
-& \textbf{Girder}
-& \makecell{\textbf{Loc.}\\\textbf{(m)}}
-& \makecell{\textbf{Max}\\\textbf{(kN)}}
-& \textbf{Girder}
-& \makecell{\textbf{Loc.}\\\textbf{(m)}}
-& \makecell{\textbf{Left}}
-& \makecell{\textbf{Right }}\\
-\hline
-\endfirsthead
-
-\hline
-\multirow{2}{*}{\makecell{\textbf{Load}\\\textbf{Case/}\\\textbf{Comb.}}}
-& \multicolumn{3}{c|}{\textbf{Bending Moment}}
-& \multicolumn{3}{c|}{\textbf{Shear Force}}
-& \multicolumn{2}{c|}{\textbf{Reaction at Supports}}\\
-\cline{2-9}
-
-& \makecell{\textbf{Max}\\\textbf{(kNm)}}
-& \textbf{Girder}
-& \makecell{\textbf{Loc.}\\\textbf{(m)}}
-& \makecell{\textbf{Max}\\\textbf{(kN)}}
-& \textbf{Girder}
-& \makecell{\textbf{Loc.}\\\textbf{(m)}}
-& \makecell{\textbf{Left}}
-& \makecell{\textbf{Right}}\\
-\hline
-\endhead
-
-""" + merged_body + r"""
-
-\hline
-\end{longtable}
+""" + make_longtable(_DEMANDS_SPEC, header_rows=_DEMANDS_HEADER, ncols=9, body=merged_body,
+                     caption="Summary of Maximum Demands") + r"""
 \endgroup
 
 \vspace{1em}
-\begin{longtable}{|>{\centering\arraybackslash}p{5.2cm}|>{\centering\arraybackslash}p{5.2cm}|>{\centering\arraybackslash}p{5.2cm}|}
-\caption{\textbf{Reactions at Supports}}
-\hline
-\textbf{Load Case} & \textbf{Left Support (kN)} & \textbf{Right Support (kN)} \\[6pt]
-\hline
+""" + make_longtable(r"|>{\centering\arraybackslash}p{5.2cm}|>{\centering\arraybackslash}p{5.2cm}|>{\centering\arraybackslash}p{5.2cm}|", [r"Load Case", r"Left Support (kN)", r"Right Support (kN)"], r"""
  & """ + '' + r""" & """ + '' + r""" \\[6pt]
 \hline
  & """ + '' + r""" & """ + '' + r""" \\[6pt]
 \hline
  & """ + '' + r""" & """ + '' + r""" \\[6pt]
 \hline
-\end{longtable}
+""", caption=r"Reactions at Supports") + r"""
 
 \vspace{1em}
-\begin{longtable}{|L{7cm}|p{8.5cm}|}
-\caption{\textbf{Deflection Summary (Live Load \& Total Load)}}
-\hline
-\textbf{parameter} & \textbf{value} \\
-\hline
+""" + make_longtable(r"|L{7cm}|p{8.5cm}|", [r"parameter", r"value"], r"""
 \textnormal{Deflection due to Live Load, $\delta_{LL}$} & """ + _live_str + r""" \\[6pt]
 \hline
 \textnormal{Allowable Live Load Deflection ($\Delta_{allow}$)} & """ + _allow_live_str + r""" \\[6pt]
@@ -172,7 +140,7 @@ A grillage model was used for structural analysis. The deck is idealized as a gr
 \hline
 \textnormal{Total Load Deflection Check Status} & """ + _total_status + r""" \\[6pt]
 \hline
-\end{longtable}
+""", header_gap=None, caption=r"Deflection Summary (Live Load \& Total Load)") + r"""
 
 \vspace{1em}
 \noindent

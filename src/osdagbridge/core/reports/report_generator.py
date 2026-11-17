@@ -203,8 +203,21 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
 
 % Prevent tables from overflowing past the page bottom:
 % if fewer than 5 baseline-skips remain, break to the next page first.
+% (longtables reserve space themselves -- see report_utils.make_longtable;
+% a \needspace before a longtable makes it print a spurious "continued" head.)
 \BeforeBeginEnvironment{table}{\needspace{5\baselineskip}}
-\BeforeBeginEnvironment{longtable}{\needspace{5\baselineskip}}
+
+% Never break a page right after a \cline: in this report a \cline always sits
+% inside a \multirow group (one girder's rows), and a break there would leave
+% the group's label on the previous page. Rows inside a group end with \\*.
+\makeatletter
+\ExplSyntaxOn
+\patchcmd{\@cline}
+  {\noalign{\vskip-\arrayrulewidth}}
+  {\noalign{\nobreak\vskip-\arrayrulewidth}}
+  {}{\typeout{OsdagBridge:~could~not~patch~cline;~row~groups~may~split~across~pages}}
+\ExplSyntaxOff
+\makeatother
 
 \definecolor{osdagGreen}{HTML}{91B014}
 
@@ -942,10 +955,10 @@ def generate_report(payload, request):
             full_tex = "\n".join(doc_parts)
 
 
-            # NOTE: longtable header repetition is handled per-table in each
-            # chapter file (e.g. \endfirsthead / \endhead).  No automatic
-            # post-processing is applied here to avoid mis-ordering captions
-            # and column headings.
+            # NOTE: every report table is built with report_utils.make_longtable()
+            # (PyLaTeX LongTable), which repeats the caption and column header
+            # row on each page (\endfirsthead / \endhead).  No post-processing
+            # of the assembled LaTeX is needed here.
 
             tmp_tex = os.path.join(tmp_dir, request.file_stem + '.tex')
             tmp_pdf = os.path.join(tmp_dir, request.file_stem + '.pdf')

@@ -3,6 +3,9 @@ from typing import List
 from osdagbridge.core.utils.common import (
     KEY_DESIGN_MODE
 )
+from osdagbridge.core.reports.report_utils import make_longtable
+
+_CODES_SPEC = r"|c|c|p{13cm}|"  # Code | Year | Title / Scope
 
 
 def ch8_design_log(log_entries: List[str], input_dict: dict) -> str:
@@ -57,12 +60,8 @@ form the basis of all design calculations in this software.
 
 \begingroup
 \setlength{\tabcolsep}{3.5pt}
-\begin{table}[H]
-\caption{\textbf{IRC Codes}}
-\begin{tabular}{|c|c|p{13cm}|}
-\hline
-\textbf{Code} & \textbf{Year} & \textbf{Title / Scope} \\ 
-\hline
+""" + make_longtable(_CODES_SPEC, ["Code", "Year", "Title / Scope"], header_gap=None,
+                     caption="IRC Codes", body=r"""
 IRC 5 & 2015 & General Features of Design - carriageway widths, kerb, footpath dimensions \\ 
 \hline
 IRC 6 & 2017 & Loads and Load Combinations - dead load, live load, impact, wind, temperature, etc. \\ 
@@ -73,19 +72,15 @@ IRC 24 & 2010 & Steel Road Bridges (LS) - Stiffener design, skew angle limits, d
 \hline
 IRC 112 & 2020 & Concrete Road Bridges - Deck slab flexure, shear, crack width, reinforcement \\ 
 \hline
-IRC SP 114 & 2018 & Seismic Design of Road Bridges \\ 
+IRC SP 114 & 2018 & Seismic Design of Road Bridges \\
 \hline
-\end{tabular}
-\end{table}
+""") + r"""
+\endgroup
 
 \begingroup
 \setlength{\tabcolsep}{3.5pt}
-\begin{table}[H]
-\caption{\textbf{IS Codes}}
-\begin{tabular}{|c|c|p{13cm}|}
-\hline
-\textbf{Code} & \textbf{Year} & \textbf{Scope} \\
-\hline
+""" + make_longtable(_CODES_SPEC, ["Code", "Year", "Scope"], header_gap=None,
+                     caption="IS Codes", body=r"""
 IS 800 & 2007 & Steel construction - tension, compression, bending, shear, LTB, stiffeners, combined checks \\
 \hline
 IS 456 & 2000 & Concrete - simplified stress-block for deck moment capacity \\
@@ -96,8 +91,8 @@ IS 1893 (Part 3) & 2014 & Earthquake resistant design \\
 \hline
 IS 2062 & 2011 & Structural steel - yield and ultimate strength by grade \\
 \hline
-\end{tabular}
-\end{table}
+""") + r"""
+\endgroup
 
 \clearpage
 \section{Analysis and Design Assumptions of This Version}
