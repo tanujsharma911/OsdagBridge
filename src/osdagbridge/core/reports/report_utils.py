@@ -16,6 +16,21 @@ _GROUP_ROW_END = re.compile(r"\\\\(?!\*)(\[[^\]]*\])?(\s*\\cline\{[^}]*\})")
 
 _ROW_END_DIM = re.compile(r"\s*\[[^\]]*\]")
 
+# Column types with an explicit width argument: p/m/b{w} and the report's C/L/R{w}.
+_COL_WIDTH = re.compile(r"[pmbCLR]\{([^}]*)\}")
+
+
+def _table_width_tex(col_spec, ncols):
+    r"""TeX expression for the full width of a table, or None when a column has
+    no fixed width (l/c/r). Width = column widths + 2\tabcolsep per column
+    + one \arrayrulewidth per vertical rule."""
+    widths = _COL_WIDTH.findall(re.sub(r">\{[^{}]*(\{[^{}]*\}[^{}]*)*\}", "", col_spec))
+    if len(widths) != ncols:
+        return None
+    rules = col_spec.count("|")
+    return (r"\dimexpr " + "+".join(widths)
+            + rf"+{2 * ncols}\tabcolsep+{rules}\arrayrulewidth\relax")
+
 
 def _first_group(body_tex):
     r"""Return the body's first row group: everything up to and including the
@@ -71,7 +86,7 @@ def _reserve_space(col_spec, head_tex, first_group, caption):
 
 def make_longtable(col_spec, headers=None, body="", *, caption=None, label=None,
                    header_rows=None, ncols=None, header_gap="6pt",
-                   continued_note=True, keep_row_groups=True):
+                   continued_note=True, keep_row_groups=True, note=None):
     r"""Build a page-breakable table whose header repeats on every page.
 
     Every report table goes through this helper, so header repetition is
@@ -114,6 +129,10 @@ def make_longtable(col_spec, headers=None, body="", *, caption=None, label=None,
         Keep rows joined by ``\cline`` (a ``\multirow`` group such as one
         girder's block) on the same page, so a group is never split from
         its label.
+    note : str | None
+        Text printed in italics under the table (LaTeX-safe, without the
+        "Note:" prefix). It is part of the table's last-page foot, so it
+        always stays on the same page as the last row.
     """
     if ncols is None:
         if not headers:
@@ -162,7 +181,18 @@ def make_longtable(col_spec, headers=None, body="", *, caption=None, label=None,
                                    data=NoEscape(r"\textit{\small Continued on next page}")),))
     table.end_table_footer()
 
-    # 4) Foot on the last page: the body already ends with a rule.
+    # 4) Foot on the last page: the body already ends with a rule; add the
+    #    note here so it can never be separated from the table by a page break.
+    note_after = ""
+    if note:
+        width = _table_width_tex(col_spec, ncols)
+        if width:
+            table.add_row((MultiColumn(
+                ncols, align=NoEscape(r"@{}>{\raggedright\arraybackslash}p{" + width + "}@{}"),
+                data=NoEscape(r"\rule{0pt}{3ex}\textit{Note: " + note + "}")),))
+        else:
+            # Columns without a fixed width: fall back to a note after the table.
+            note_after = r"\noindent\textit{Note: " + note + "}\n"
     table.end_table_last_footer()
 
     # 5) Body rows.
@@ -184,7 +214,7 @@ def make_longtable(col_spec, headers=None, body="", *, caption=None, label=None,
     # Start the table on a new page unless its head and first row group fit.
     head_tex = r"\hline" + ("\n" + title_row + "\n" + r"\hline" if title_row else "")
     reserve = _reserve_space(col_spec, head_tex, _first_group(body_tex), caption)
-    return reserve + table.dumps()
+    return reserve + table.dumps() + ("\n" + note_after if note_after else "")
 
 
 def _tex(value):

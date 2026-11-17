@@ -21,7 +21,7 @@ _DEMANDS_SPEC = (r"|>{\centering\arraybackslash}p{3.1cm}"
                  r"|>{\centering\arraybackslash}p{1.6cm}"
                  r"|>{\centering\arraybackslash}p{1.6cm}|")
 _DEMANDS_HEADER = r"""
-\multirow{2}{*}{\makecell{\textbf{Load}\\\textbf{Case/}\\\textbf{Comb.}}}
+\multirow{2}{*}{\makecell{\textbf{Load Case/}\\\textbf{Comb.}}}
 & \multicolumn{3}{c|}{\textbf{Bending Moment}}
 & \multicolumn{3}{c|}{\textbf{Shear Force}}
 & \multicolumn{2}{c|}{\textbf{Reaction at Supports}}\\

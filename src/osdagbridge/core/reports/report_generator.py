@@ -156,7 +156,11 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
 \documentclass[12pt,a4paper]{report}
 
 % Packages
-\usepackage[a4paper, margin=1in]{geometry}
+% headheight: room for the running header (fancyhdr needs ~17.5pt at 12pt).
+% footskip: room below the text block for the footer line, the green rule and
+% the optional "* Software default value" note, so none of them reach up
+% into the text area (see \osdagfootrule).
+\usepackage[a4paper, margin=1in, headheight=18pt, footskip=38pt]{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -221,6 +225,17 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
 
 \definecolor{osdagGreen}{HTML}{91B014}
 
+% Footer rule. fancyhdr stacks the footer upward from the footer line:
+% [optional "* Software default value" note] / green rule / 6pt / footer line.
+% No negative \vspace: the block's real height must fit inside \footskip
+% (fancyhdr warns otherwise), so it can never reach into the text area.
+\newcommand{\osdagfootrule}[1]{%
+  \ifbool{#1}{%
+    \hbox to \headwidth{\footnotesize\itshape * Software default value\hfil}%
+    \vskip 3pt}{}%
+  {\color{osdagGreen}\hrule width\headwidth height 1pt}%
+  \vskip 6pt}
+
 \fancypagestyle{main}{
   \fancyhf{}
   \fancyhead[L]{""" + pn + r""" $|$ """ + jn + r"""}
@@ -228,16 +243,7 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
   \fancyfoot[L]{Osdag $|$ FOSSEE $|$ Indian Institute of Technology Bombay}
   \fancyfoot[R]{Page \thepage\ of \pageref{LastPage}}
   \renewcommand{\headrule}{\color{osdagGreen}\hrule width\headwidth height 1pt \vspace{2pt}}
-  \renewcommand{\footrule}{%
-    \ifbool{hasSDonPage}{%
-      \vspace{-20pt}%
-      \hbox to \headwidth{\textcolor{black}{\footnotesize\textit{* Software default value}}\hfil}%
-      \vspace{4pt}%
-    }{%
-      \vspace{-8pt}%
-    }%
-    \color{osdagGreen}\hrule width\headwidth height 1pt \vspace{6pt}%
-  }
+  \renewcommand{\footrule}{\osdagfootrule{hasSDonPage}}
 }
 \fancypagestyle{plain}{
   \fancyhf{}
@@ -246,23 +252,14 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
   \fancyfoot[L]{Osdag $|$ FOSSEE $|$ Indian Institute of Technology Bombay}
   \fancyfoot[R]{Page \thepage\ of \pageref{LastPage}}
   \renewcommand{\headrule}{\color{osdagGreen}\hrule width\headwidth height 1pt \vspace{2pt}}
-  \renewcommand{\footrule}{%
-    \ifbool{hasSDonPage}{%
-      \vspace{-20pt}%
-      \hbox to \headwidth{\textcolor{black}{\footnotesize\textit{* Software default value}}\hfil}%
-      \vspace{4pt}%
-    }{%
-      \vspace{-8pt}%
-    }%
-    \color{osdagGreen}\hrule width\headwidth height 1pt \vspace{6pt}%
-  }
+  \renewcommand{\footrule}{\osdagfootrule{hasSDonPage}}
 }
 \fancypagestyle{firstpage}{
   \fancyhf{}
   \renewcommand{\headrulewidth}{0pt}
   \fancyfoot[L]{Osdag $|$ FOSSEE $|$ Indian Institute of Technology Bombay}
   \fancyfoot[R]{Page \thepage\ of \pageref{LastPage}}
-  \renewcommand{\footrule}{\vspace{-8pt}\color{osdagGreen}\hrule width\headwidth height 1pt \vspace{6pt}}
+  \renewcommand{\footrule}{\osdagfootrule{hasNoSDNote}}
 }
 \pagestyle{main}
 \setstretch{1.15}
@@ -278,6 +275,7 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
 \newcommand{\sdstar}{\textsuperscript{*}}
 \newbool{hasSDonPage}
 \boolfalse{hasSDonPage}
+\newbool{hasNoSDNote}   % always false: title page never shows the note
 \newcommand{\markSD}{\global\booltrue{hasSDonPage}}
 \renewcommand{\sdstar}{\textsuperscript{*}\markSD{}}
 \AddToHook{shipout/before}{\global\boolfalse{hasSDonPage}}
